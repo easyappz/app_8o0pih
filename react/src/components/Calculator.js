@@ -1,76 +1,78 @@
 import React, { useState } from 'react';
-import { Button, Layout, theme } from 'antd';
+import { Button, Input, Layout, Typography } from 'antd';
 import './Calculator.css';
 
 const { Content } = Layout;
+const { Title } = Typography;
 
 const Calculator = () => {
   const [display, setDisplay] = useState('0');
+  const [currentValue, setCurrentValue] = useState('');
+  const [previousValue, setPreviousValue] = useState('');
   const [operation, setOperation] = useState('');
-  const [previousValue, setPreviousValue] = useState(0);
   const [waitingForSecondValue, setWaitingForSecondValue] = useState(false);
-
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
 
   const handleNumberClick = (value) => {
     if (display === '0' && value !== '.') {
       setDisplay(value);
-    } else if (value === '.' && display.includes('.')) {
-      return;
+      setCurrentValue(value);
     } else {
+      if (value === '.' && display.includes('.')) {
+        return;
+      }
       setDisplay(display + value);
-    }
-    if (!waitingForSecondValue) {
-      setPreviousValue(parseFloat(display + value));
+      setCurrentValue(currentValue + value);
     }
   };
 
   const handleOperationClick = (op) => {
+    setPreviousValue(currentValue);
+    setCurrentValue('');
     setOperation(op);
-    setPreviousValue(parseFloat(display));
-    setDisplay('0');
     setWaitingForSecondValue(true);
+    setDisplay(op);
   };
 
-  const handleEqualClick = () => {
-    if (!operation) return;
+  const calculateResult = () => {
+    if (!previousValue || !currentValue || !operation) return;
 
-    const currentValue = parseFloat(display);
     let result = 0;
+    const prev = parseFloat(previousValue);
+    const curr = parseFloat(currentValue);
 
     switch (operation) {
       case '+':
-        result = previousValue + currentValue;
+        result = prev + curr;
         break;
       case '-':
-        result = previousValue - currentValue;
+        result = prev - curr;
         break;
       case '×':
-        result = previousValue * currentValue;
+        result = prev * curr;
         break;
       case '÷':
-        if (currentValue === 0) {
+        if (curr === 0) {
           setDisplay('Ошибка');
           return;
         }
-        result = previousValue / currentValue;
+        result = prev / curr;
         break;
       default:
-        break;
+        return;
     }
 
     setDisplay(result.toString());
+    setCurrentValue(result.toString());
+    setPreviousValue('');
     setOperation('');
-    setPreviousValue(result);
     setWaitingForSecondValue(false);
   };
 
-  const handleClearClick = () => {
+  const handleClear = () => {
     setDisplay('0');
+    setCurrentValue('');
+    setPreviousValue('');
     setOperation('');
-    setPreviousValue(0);
     setWaitingForSecondValue(false);
   };
 
@@ -83,30 +85,23 @@ const Calculator = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <Content
-        style={{
-          margin: '24px 16px',
-          padding: 24,
-          minHeight: 280,
-          background: colorBgContainer,
-          borderRadius: borderRadiusLG,
-          width: '100%',
-          maxWidth: 400,
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
-        }}
-      >
-        <div className="calculator-display">{display}</div>
-        <div className="calculator-grid">
+    <Layout className="calculator-layout">
+      <Content className="calculator-content">
+        <Title level={2} className="calculator-title">Калькулятор</Title>
+        <Input
+          className="calculator-display"
+          value={display}
+          disabled
+        />
+        <div className="calculator-buttons">
           {buttons.map((btn) => (
             <Button
               key={btn}
-              type={['÷', '×', '-', '+'].includes(btn) ? 'primary' : 'default'}
               className={`calculator-button ${btn === '=' ? 'equals-button' : ''}`}
               onClick={() => {
-                if (btn === 'C') handleClearClick();
-                else if (btn === '=') handleEqualClick();
-                else if (['÷', '×', '-', '+'].includes(btn)) handleOperationClick(btn);
+                if (btn === 'C') handleClear();
+                else if (btn === '=') calculateResult();
+                else if (['+', '-', '×', '÷'].includes(btn)) handleOperationClick(btn);
                 else handleNumberClick(btn);
               }}
             >
