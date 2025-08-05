@@ -1,114 +1,121 @@
 import React, { useState } from 'react';
-import { Button, Input, Card, Typography, Space, Divider } from 'antd';
+import { Button, Layout, theme } from 'antd';
 import './Calculator.css';
 
-const { Title, Text } = Typography;
+const { Content } = Layout;
 
 const Calculator = () => {
   const [display, setDisplay] = useState('0');
-  const [previousValue, setPreviousValue] = useState(null);
-  const [operation, setOperation] = useState(null);
+  const [operation, setOperation] = useState('');
+  const [previousValue, setPreviousValue] = useState(0);
   const [waitingForSecondValue, setWaitingForSecondValue] = useState(false);
+
+  const {
+    token: { colorBgContainer, borderRadiusLG },
+  } = theme.useToken();
 
   const handleNumberClick = (value) => {
     if (display === '0' && value !== '.') {
       setDisplay(value);
+    } else if (value === '.' && display.includes('.')) {
+      return;
     } else {
-      if (value === '.' && display.includes('.')) {
-        return;
-      }
       setDisplay(display + value);
     }
-    if (waitingForSecondValue) {
-      setWaitingForSecondValue(false);
+    if (!waitingForSecondValue) {
+      setPreviousValue(parseFloat(display + value));
     }
   };
 
   const handleOperationClick = (op) => {
-    setPreviousValue(parseFloat(display));
     setOperation(op);
-    setWaitingForSecondValue(true);
+    setPreviousValue(parseFloat(display));
     setDisplay('0');
+    setWaitingForSecondValue(true);
   };
 
-  const calculateResult = () => {
-    if (!previousValue || !operation) return;
+  const handleEqualClick = () => {
+    if (!operation) return;
 
-    const current = parseFloat(display);
+    const currentValue = parseFloat(display);
     let result = 0;
 
     switch (operation) {
       case '+':
-        result = previousValue + current;
+        result = previousValue + currentValue;
         break;
       case '-':
-        result = previousValue - current;
+        result = previousValue - currentValue;
         break;
-      case '*':
-        result = previousValue * current;
+      case '×':
+        result = previousValue * currentValue;
         break;
-      case '/':
-        if (current === 0) {
+      case '÷':
+        if (currentValue === 0) {
           setDisplay('Ошибка');
           return;
         }
-        result = previousValue / current;
+        result = previousValue / currentValue;
         break;
       default:
-        return;
+        break;
     }
 
     setDisplay(result.toString());
-    setPreviousValue(null);
-    setOperation(null);
-  };
-
-  const handleClear = () => {
-    setDisplay('0');
-    setPreviousValue(null);
-    setOperation(null);
+    setOperation('');
+    setPreviousValue(result);
     setWaitingForSecondValue(false);
   };
 
+  const handleClearClick = () => {
+    setDisplay('0');
+    setOperation('');
+    setPreviousValue(0);
+    setWaitingForSecondValue(false);
+  };
+
+  const buttons = [
+    '7', '8', '9', '÷',
+    '4', '5', '6', '×',
+    '1', '2', '3', '-',
+    '0', '.', 'C', '+',
+    '='
+  ];
+
   return (
-    <Card className="calculator-card" bordered={false}>
-      <Title level={3} style={{ textAlign: 'center' }}>Калькулятор</Title>
-      <Divider />
-      <Input
-        value={display}
-        disabled
-        style={{ marginBottom: 16, textAlign: 'right', fontSize: '24px', height: '50px' }}
-      />
-      <Space direction="vertical" size="small" style={{ width: '100%' }}>
-        <Space wrap>
-          <Button className="calc-button" onClick={() => handleNumberClick('7')}>7</Button>
-          <Button className="calc-button" onClick={() => handleNumberClick('8')}>8</Button>
-          <Button className="calc-button" onClick={() => handleNumberClick('9')}>9</Button>
-          <Button className="calc-button operation" onClick={() => handleOperationClick('/')}>/</Button>
-        </Space>
-        <Space wrap>
-          <Button className="calc-button" onClick={() => handleNumberClick('4')}>4</Button>
-          <Button className="calc-button" onClick={() => handleNumberClick('5')}>5</Button>
-          <Button className="calc-button" onClick={() => handleNumberClick('6')}>6</Button>
-          <Button className="calc-button operation" onClick={() => handleOperationClick('*')}>×</Button>
-        </Space>
-        <Space wrap>
-          <Button className="calc-button" onClick={() => handleNumberClick('1')}>1</Button>
-          <Button className="calc-button" onClick={() => handleNumberClick('2')}>2</Button>
-          <Button className="calc-button" onClick={() => handleNumberClick('3')}>3</Button>
-          <Button className="calc-button operation" onClick={() => handleOperationClick('-')}>-</Button>
-        </Space>
-        <Space wrap>
-          <Button className="calc-button" onClick={() => handleNumberClick('0')}>0</Button>
-          <Button className="calc-button" onClick={() => handleNumberClick('.')}>.</Button>
-          <Button className="calc-button clear" onClick={handleClear}>C</Button>
-          <Button className="calc-button operation" onClick={() => handleOperationClick('+')}>+</Button>
-        </Space>
-        <Space wrap style={{ justifyContent: 'center' }}>
-          <Button className="calc-button equal" onClick={calculateResult} type="primary">=</Button>
-        </Space>
-      </Space>
-    </Card>
+    <Layout style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <Content
+        style={{
+          margin: '24px 16px',
+          padding: 24,
+          minHeight: 280,
+          background: colorBgContainer,
+          borderRadius: borderRadiusLG,
+          width: '100%',
+          maxWidth: 400,
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+        }}
+      >
+        <div className="calculator-display">{display}</div>
+        <div className="calculator-grid">
+          {buttons.map((btn) => (
+            <Button
+              key={btn}
+              type={['÷', '×', '-', '+'].includes(btn) ? 'primary' : 'default'}
+              className={`calculator-button ${btn === '=' ? 'equals-button' : ''}`}
+              onClick={() => {
+                if (btn === 'C') handleClearClick();
+                else if (btn === '=') handleEqualClick();
+                else if (['÷', '×', '-', '+'].includes(btn)) handleOperationClick(btn);
+                else handleNumberClick(btn);
+              }}
+            >
+              {btn}
+            </Button>
+          ))}
+        </div>
+      </Content>
+    </Layout>
   );
 };
 
